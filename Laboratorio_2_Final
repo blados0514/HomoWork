@@ -1,0 +1,389 @@
+
+--Head
+
+create or replace PACKAGE PKG_LABORATORIO_2 AS 
+
+/*ISVA
+Nombre     :LABORATORIO_1
+Autor      :Blados.Ospina
+Fecha      :03/04/18
+Parametros : 
+Retorno    :gv_extencion      :
+            GV_MAYOR_EDAD  :
+            GV_NULOS     :
+            GV_FEMENINO  :
+            GV_MASCULINO :
+Proyecto   :PRACTICA 1
+VersiÛn    :1.0
+Objetivo   :Realizar las validaciones para mostrar la informacion
+correspondiente
+**************************************************************************
+control de cambios realizados por desarrolladores
+**************************************************************************
+Fecha       Autor         Blados.Ospina */
+
+gv_extencion Varchar (4):='.txt';
+GV_MAYOR_EDAD Constant Number(2):=18;
+GV_M Constant Varchar2(10):='Masculino';
+GV_F Constant Varchar2(10):='Femenino';
+GV_Desconocido Constant Varchar2(20):='Genero no valido';
+GV_Mayor_Ed Varchar2(255 byte):='Es Menor de edad';
+GV_Menor_Ed Varchar2(255 byte):='Es Mayor de edad';
+
+
+PROCEDURE Sp_Laboratorio_2;
+
+END PKG_LABORATORIO_2;
+
+
+
+-- Body
+
+create or replace PACKAGE BODY PKG_LABORATORIO_2 AS
+
+if_Actual Date:=SysDate;
+
+Type Datos_Calculados is Record (
+Edad_Promedio Number:=0,
+Edad_Maxima Simple_Integer:=0,
+Edad_Minima Simple_Integer:=0,
+Total_Edades Simple_Integer:=0,
+byte_Masculino Simple_Integer:=0,
+byte_Femenino Simple_Integer:=0
+);
+
+type itype_Array_Datos_Personales is table of Persona%RowType;
+
+itype_Persona Persona%RowType;
+
+itype_Datos_Persona itype_Array_Datos_Personales:=itype_Array_Datos_Personales();
+Itype_Mayores itype_Array_Datos_Personales:=itype_Array_Datos_Personales();
+Itype_Menores itype_Array_Datos_Personales:=itype_Array_Datos_Personales();
+Itype_Errores itype_Array_Datos_Personales:=itype_Array_Datos_Personales();
+ittype_Calculados_Final  Datos_Calculados;
+
+Function Ft_Calcular_Fecha (an_Dato Number Default null) Return Date AS 
+
+/*ISVA
+Nombre     :Ft_Calcular_Fecha
+Autor      :Blados.Ospina
+Fecha      :12/04/18
+Variables  :ld_Fecha, ln_Dia,ln_Mes,ln_Año
+Variables  :ld_Fecha, ln_Dia,ln_Mes,ln_Año
+Retorno    :ld_Fecha
+Proyecto   :Laboratorio_1
+Version    :2.0 
+Objetivo   :Genera fechas aleatorias
+**************************************************************************
+control de cambios realizados por desarrolladores
+**************************************************************************
+Fecha       Autor         Blados.Ospina */
+
+ld_Fecha Date; 
+ln_Dia Number(2); 
+ln_Mes Number(2); 
+ln_Año Number(4); 
+lv_Dia_1 Varchar(2); 
+lv_Mes_1 Varchar(2);
+
+Begin 
+
+ln_Dia:=0; 
+ln_Mes:=0; 
+ln_Año:=0;
+
+ln_Dia:=Round(Dbms_Random.Value(1,30)); 
+    If Length(ln_Dia)= 1 Then 
+        lv_Dia_1:= '0'||ln_dia; 
+    Else 
+        lv_Dia_1:=ln_Dia; 
+    End If; 
+ln_Mes:=Round(Dbms_Random.Value(1,12)); 
+    if Length(ln_Mes)= 1 Then 
+        lv_Mes_1:= '0'||ln_Mes; 
+    Else 
+        lv_Mes_1:=ln_Mes; 
+    End If; 
+ln_Año:=Round(Dbms_Random.Value(1980,2017)); 
+ld_Fecha:=(To_Date(lv_Dia_1||lv_Mes_1||ln_Año)); 
+
+    Return ld_Fecha; 
+
+END Ft_Calcular_Fecha;
+
+Function Ft_Val_Edad_Sexo(aFecha_Nacimiento Date default Null, av_Sexo Varchar default Null) Return Number As
+
+/*ISVA
+Nombre     :Ft_Calcular_Edad
+Autor      :Blados.Ospina
+Fecha      :03/04/18
+Parametros :a   d_Fecha_Nacimiento
+Parametros :av_Sexo
+Retorno    :      :
+Proyecto   :Laboratorio_1
+VersiÛn    :2.0
+Objetivo   :Verifica si una persona es mayor o no de edad
+y validad tipo de sexo
+**************************************************************************
+control de cambios realizados por desarrolladores
+**************************************************************************
+Fecha       Autor         Blados.Ospina */
+
+li_Feha_Nac Integer:=0;
+ld_Fecha_Actual Integer:=0;
+ln_Validacion Number(4):=0;
+Begin
+        If av_Sexo is Not Null Then
+              If av_Sexo = 'M' Then 
+                        ln_Validacion:=1;
+              Else
+                        ln_Validacion:=0;
+              End If;
+        End If;
+        If aFecha_Nacimiento is Not Null Then
+        
+             li_Feha_Nac:= To_Char(aFecha_Nacimiento,'yyyy');
+             ld_Fecha_Actual:=To_Char(if_Actual,'yyyy');
+             
+                ln_Validacion:=ld_Fecha_Actual - li_Feha_Nac;
+                
+            If  ln_Validacion >= GV_MAYOR_EDAD And aFecha_Nacimiento is Not Null Then 
+            
+                    ln_Validacion:=ln_Validacion;             
+            Else
+                    ln_Validacion:=ln_Validacion;
+            End If;
+        End If;
+    
+    Return ln_Validacion;
+
+End Ft_Val_Edad_Sexo;
+
+Procedure Sp_Insertar_Datos as
+
+/*ISVA
+Nombre     :Sp_Insertar_Datos
+Autor      :Blados.Ospina
+Fecha      :13/04/18
+Retorno    :
+Proyecto   :Laboratorio_1
+VersiÛn    :1.0
+Objetivo   :Inserta los datos requeridos en la tabla
+**************************************************************************
+control de cambios realizados por desarrolladores
+**************************************************************************
+Fecha       Autor         Blados.Ospina */
+
+Begin
+    For Ln_Index In 1..itype_Datos_Persona.Count() Loop
+        Insert Into Persona (Id_Persona,Id_Documento,Nombre,Fecha_Nacimiento,Valor_hora,Horas_trabajada,sexo)
+        Values (itype_Datos_Persona(Ln_Index).Id_Persona,itype_Datos_Persona(Ln_Index).Id_Documento,    
+                itype_Datos_Persona(Ln_Index).Nombre,itype_Datos_Persona(Ln_Index).Fecha_Nacimiento,
+                itype_Datos_Persona(Ln_Index).Valor_Hora,itype_Datos_Persona(Ln_Index).Horas_trabajada,
+                itype_Datos_Persona(Ln_Index).Sexo);
+    End Loop;
+    Commit;
+End Sp_Insertar_Datos; 
+
+Procedure Sp_Inicializar_Variables As
+
+/*ISVA
+Nombre     :Sp_Inicializar_Variables
+Autor      :Blados.Ospina
+Fecha      :03/04/18
+Variables  :ln_Inicio, ln_Fin
+Retorno    :     
+Proyecto   :Laboratorio_1
+VersiÛn    :2.0
+Objetivo   :Iniciarlizar los 100 registro
+**************************************************************************
+control de cambios realizados por desarrolladores
+**************************************************************************
+Fecha       Autor         Blados.Ospina */
+
+ln_Inicio Number:=1;
+ln_Fin Number:=10;
+ln_Contador Number:=0;
+lsi_Edad Simple_Integer:=0;
+lsi_Edad_Min Simple_Integer:=1000;
+lsi_Edad_Max Simple_Integer:=0;
+ln_edad_calculos Number:=0;
+
+
+Begin
+
+   -- Select Parametro_Inicial, Parametro_Final Into ln_Inicio, ln_Fin  From Parametros;
+        
+            For Ln_Index In ln_Inicio..ln_Fin Loop
+            Begin
+                itype_Persona.id_persona:= Ln_Index;
+                itype_Persona.Id_documento:= Round(dbms_random.value(1000000,1000000000));
+                itype_Persona.nombre:= ('Blados'||Ln_Index);
+                itype_Persona.fecha_nacimiento:= Ft_Calcular_Fecha();
+                itype_Persona.valor_hora:=  Round(dbms_random.value(1000,50000));
+                itype_Persona.horas_trabajada := Round(dbms_random.value(1,100));
+                
+                CASE Round(dbms_random.value(1,5))
+                    WHEN 1 THEN 
+                        itype_Persona.sexo :='M';
+                    WHEN 2 THEN 
+                        itype_Persona.sexo :='F';
+                    WHEN 3 THEN 
+                        itype_Persona.sexo :='MF';
+                    WHEN 4 THEN 
+                        itype_Persona.sexo :='FM';
+                    Else
+                        itype_Persona.sexo :='N/A';
+                 END Case;
+                 
+                 
+                 itype_Datos_Persona.extend;
+                 itype_Datos_Persona(itype_Datos_Persona.Count()):=Itype_Persona;
+                  --Validar la edad 
+                  lsi_Edad:=Ft_Val_Edad_Sexo(itype_Persona.fecha_nacimiento,null);
+                  
+        
+                If  lsi_Edad >= 18 Then  
+                        Itype_Mayores.extend;
+                        Itype_Mayores(Itype_Mayores.Count()):=Itype_Persona;           
+                Else
+                        Itype_Menores.extend;
+                        Itype_Menores(Itype_Mayores.Count()):=Itype_Persona;  
+                End If;
+                
+                    if lsi_Edad < lsi_Edad_Min Then
+                        lsi_Edad_Min:=  lsi_Edad;  
+                    End If;
+                
+                    if lsi_Edad > lsi_Edad_Max Then
+                        lsi_Edad_Max:= lsi_Edad;
+                    End If;
+                
+                ln_edad_calculos:= ln_edad_calculos + lsi_Edad;
+                --ln_Edad_Total:=ln_Edad_Total + ln_Promedio_Edades;
+                ln_Contador:=ln_Contador +1;   
+                
+                Exception
+                When Others Then   
+                    itype_Persona.id_persona:=(Dbms_Utility.Format_Error_Backtrace||' '||'Sp_Inicializar_Variables'); 
+                    itype_Persona.Nombre:=sqlerrm;
+                
+                   Itype_Errores.extend;
+                   Itype_Errores(Itype_Errores.Count()):=Itype_Persona; 
+                    Continue;
+            End;            
+            End Loop;
+         
+                ittype_Calculados_Final.Edad_Promedio :=ln_edad_calculos / ln_Contador;
+                ittype_Calculados_Final.Total_Edades := ln_edad_calculos;
+                ittype_Calculados_Final.Edad_Maxima :=lsi_Edad_Max;
+                ittype_Calculados_Final.Edad_Minima :=lsi_Edad_Min;  
+                
+        Sp_Insertar_Datos;
+
+END  Sp_Inicializar_Variables;
+
+Procedure Sp_Almacenar_Byte As
+
+Cursor lcur_Persona Is Select Id_Persona,Id_Documento,Nombre,Fecha_Nacimiento,Valor_Hora,Horas_Trabajada,
+                              Sexo From Persona;
+
+Begin
+    For Ln_Index In lcur_Persona Loop 
+        If  Ln_Index.Sexo = 'M' Then
+            ittype_Calculados_Final.byte_Masculino:= ittype_Calculados_Final.byte_Masculino + Length(Ln_Index.Id_Persona);
+            ittype_Calculados_Final.byte_Masculino:= ittype_Calculados_Final.byte_Masculino + Length(Ln_Index.Id_Documento);
+            ittype_Calculados_Final.byte_Masculino := ittype_Calculados_Final.byte_Masculino + Length(Ln_Index.Nombre);
+            ittype_Calculados_Final.byte_Masculino := ittype_Calculados_Final.byte_Masculino + Length(Ln_Index.Fecha_Nacimiento);
+            ittype_Calculados_Final.byte_Masculino := ittype_Calculados_Final.byte_Masculino + Length(Ln_Index.Valor_Hora);
+            ittype_Calculados_Final.byte_Masculino := ittype_Calculados_Final.byte_Masculino + Length(Ln_Index.Horas_Trabajada);
+            ittype_Calculados_Final.byte_Masculino := ittype_Calculados_Final.byte_Masculino + Length(Ln_Index.Sexo);
+        Else
+            ittype_Calculados_Final.byte_Femenino := ittype_Calculados_Final.byte_Femenino + Length(Ln_Index.Id_Persona);
+            ittype_Calculados_Final.byte_Femenino := ittype_Calculados_Final.byte_Femenino + Length(Ln_Index.Id_Documento);
+            ittype_Calculados_Final.byte_Femenino := ittype_Calculados_Final.byte_Femenino + Length(Ln_Index.Nombre);
+            ittype_Calculados_Final.byte_Femenino := ittype_Calculados_Final.byte_Femenino + Length(Ln_Index.Fecha_Nacimiento);
+            ittype_Calculados_Final.byte_Femenino := ittype_Calculados_Final.byte_Femenino + Length(Ln_Index.Valor_Hora);
+            ittype_Calculados_Final.byte_Femenino := ittype_Calculados_Final.byte_Femenino + Length(Ln_Index.Horas_Trabajada);
+            ittype_Calculados_Final.byte_Femenino := ittype_Calculados_Final.byte_Femenino + Length(Ln_Index.Sexo);
+        End If;   
+    End Loop;
+    
+End Sp_Almacenar_Byte;
+
+Procedure Sp_Imprimir_Datos As
+
+Begin
+        Dbms_Output.Put_Line('****************************');
+        Dbms_Output.Put_Line('** Datos Mayores de Edad ***');
+        Dbms_Output.Put_Line('****************************');
+        If Itype_Mayores.Count() > 0 Then 
+            For Ln_Index In 1..Itype_Mayores.Count() Loop
+                 Dbms_Output.Put_Line(Itype_Mayores(Ln_Index).Id_Documento);
+                 Dbms_Output.Put_Line(Itype_Mayores(Ln_Index).Nombre);
+            End Loop;
+        Else
+            Dbms_Output.Put_Line('No se registro usuarios mayores de edad:');
+        End If;
+        
+        Dbms_Output.Put_Line('****************************');
+        Dbms_Output.Put_Line('** Datos Menores de Edad ***');
+        Dbms_Output.Put_Line('****************************');
+        If Itype_Menores.Count() > 0 Then
+            For Ln_Index_2 In 1..Itype_Menores.Count() Loop
+                Dbms_Output.Put_Line(Itype_Menores(Ln_Index_2).Id_Documento);
+                Dbms_Output.Put_Line(Itype_Menores(Ln_Index_2).Nombre);
+            End Loop;
+        Else
+            Dbms_Output.Put_Line('No se registro usuarios menores de edad:');
+        End If;
+        
+        Dbms_Output.Put_Line('*****************************');
+        Dbms_Output.Put_Line('**** Datos de Errores *******');
+        Dbms_Output.Put_Line('*****************************');
+    
+        If Itype_Errores.Count() > 0 Then
+            For Ln_Index_3 In 1..Itype_Errores.Count() Loop
+                Dbms_Output.Put_Line(Itype_Errores(Ln_Index_3).Id_Persona);
+                Dbms_Output.Put_Line(Itype_Errores(Ln_Index_3).Nombre);
+            End Loop;
+        Else
+           Dbms_Output.Put_Line('No se registraron errores:'); 
+        End If;
+            Dbms_Output.Put_Line('*****************************');
+            Dbms_Output.Put_Line('***** Datos Calculados ******');
+            Dbms_Output.Put_Line('*****************************');
+            Dbms_Output.Put_Line('Edad Promedio:'||ittype_Calculados_Final.Edad_Promedio);
+            Dbms_Output.Put_Line('Total Edades: '||ittype_Calculados_Final.Total_Edades);
+            Dbms_Output.Put_Line('Edad Maxima:  '||ittype_Calculados_Final.Edad_Maxima);
+            Dbms_Output.Put_Line('Edad Minima:  '||ittype_Calculados_Final.Edad_Minima);
+            Dbms_Output.Put_Line('***************************');
+            
+            Dbms_Output.Put_Line('*****************************');
+            Dbms_Output.Put_Line('Byte Hombre: '||ittype_Calculados_Final.byte_Masculino);
+            Dbms_Output.Put_Line('Byte Mujer : '||ittype_Calculados_Final.byte_Femenino);
+            Dbms_Output.Put_Line('*****************************');
+End Sp_Imprimir_Datos;
+
+PROCEDURE Sp_Laboratorio_2 AS
+  BEGIN
+    Sp_Inicializar_Variables;
+    Sp_Almacenar_Byte;
+    Sp_Imprimir_Datos;
+END Sp_Laboratorio_2;
+
+END PKG_LABORATORIO_2;
+
+
+
+--Triger
+
+create or replace TRIGGER Tr_Audutoria
+ BEFORE INSERT OR UPDATE OF Sexo ON Persona
+ FOR each ROW WHEN(NEW.Sexo = 'F')
+ BEGIN
+      INSERT INTO Auditoria
+        (Fecha_Creacion,Sexo)
+  VALUES
+  (SYSDATE,:NEW.Sexo);
+ END Tr_Audutoria;
