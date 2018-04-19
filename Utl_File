@@ -1,0 +1,16 @@
+PROCEDURE SHAREFLE IS
+Name_File Varchar2(255 byte):='Prueba.txt';
+  v_MyFileHandle UTL_FILE.FILE_TYPE;
+  BEGIN
+     v_MyFileHandle := UTL_FILE.FOPEN('DIR_OMISOS',Name_File,'W');  
+       For Ln_Index In 1..10 Loop
+       
+        UTL_FILE.PUT_LINE(v_MyFileHandle, 'Hola blados' );
+       End Loop;
+        UTL_FILE.FCLOSE(v_MyFileHandle);
+ EXCEPTION
+      WHEN OTHERS THEN
+           DBMS_OUTPUT.PUT_LINE
+                ('ERROR ' || TO_CHAR(SQLCODE) || SQLERRM);
+           NULL; 
+ END SHAREFLE; 
